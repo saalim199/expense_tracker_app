@@ -181,29 +181,34 @@ class _HomePageState extends State<HomePage> {
               BlocBuilder<ExpenseBloc, ExpenseState>(
                 builder: (context, state) {
                   if (state is ExpenseLoaded) {
-                    return Column(
-                      children: [
-                        Text(
-                            DateFormat('MMM yy')
-                                .format(DateTime(state.year, state.month, 1)),
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            )),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.currency_rupee),
-                            Text(
-                              state.totalExpense.toString(),
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
+                    return Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                                DateFormat('MMM yy').format(
+                                    DateTime(state.year, state.month, 1)),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                )),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.currency_rupee),
+                              Text(
+                                state.totalExpense.toString(),
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                          ],
-                        )
-                      ],
+                            ],
+                          )
+                        ],
+                      ),
                     );
                   }
                   return const SizedBox();
@@ -246,6 +251,7 @@ class _HomePageState extends State<HomePage> {
                   return const SizedBox();
                 },
               ),
+              const SizedBox(height: 20),
               Expanded(
                 child: BlocBuilder<ExpenseBloc, ExpenseState>(
                   builder: (context, state) {

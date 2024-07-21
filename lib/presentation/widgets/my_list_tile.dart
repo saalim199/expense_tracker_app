@@ -37,16 +37,23 @@ class MyListTile extends StatelessWidget {
           ),
         ],
       ),
-      child: ListTile(
-        title: Text(title),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.currency_rupee),
-            Text(trailing,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          ],
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade400,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 20),
+        child: ListTile(
+          title: Text(title),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.currency_rupee),
+              Text(trailing,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14)),
+            ],
+          ),
         ),
       ),
     );
