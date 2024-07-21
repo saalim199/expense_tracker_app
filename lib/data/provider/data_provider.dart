@@ -20,6 +20,14 @@ class DataProvider {
     return await isar.expenses.where().findAll();
   }
 
+  Future<List<Expense>> getExpensesByMonth(int year, int month) async {
+    return await isar.expenses
+        .where()
+        .filter()
+        .dateBetween(DateTime(year, month, 1), DateTime(year, month + 1, 1))
+        .findAll();
+  }
+
   Future<void> updateExpense(int id, Expense updatedExpense) async {
     updatedExpense.id = id;
     await isar.writeTxn(() {
@@ -31,5 +39,48 @@ class DataProvider {
     await isar.writeTxn(() {
       return isar.expenses.delete(id);
     });
+  }
+
+  Future<Map<int, double>> calculateMonthlyTotal() async {
+    final expenses = await getAllExpenses();
+    Map<int, double> monthlyTotal = {};
+    int startYear = await getStartYear();
+    for (var expense in expenses) {
+      int month = expense.date.month;
+      int year = expense.date.year;
+      if (year < startYear) {
+        continue;
+      }
+      month += (year - startYear) * 12;
+      if (!monthlyTotal.containsKey(month)) {
+        monthlyTotal[month] = 0;
+      }
+      monthlyTotal[month] = monthlyTotal[month]! + expense.amount;
+    }
+    return monthlyTotal;
+  }
+
+  Future<int> getStartMonth() async {
+    final expenses = await getAllExpenses();
+    if (expenses.isEmpty) {
+      return DateTime.now().month;
+    }
+    expenses.sort(
+      (a, b) => a.date.compareTo(b.date),
+    );
+
+    return expenses.first.date.month;
+  }
+
+  Future<int> getStartYear() async {
+    final expenses = await getAllExpenses();
+    if (expenses.isEmpty) {
+      return DateTime.now().year;
+    }
+    expenses.sort(
+      (a, b) => a.date.compareTo(b.date),
+    );
+
+    return expenses.first.date.year;
   }
 }

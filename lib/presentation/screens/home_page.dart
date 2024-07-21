@@ -1,10 +1,11 @@
-import 'dart:math';
-
-import 'package:expense_tracker_app/bloc/expense_bloc.dart';
+import 'package:expense_tracker_app/bloc/expense%20bloc/expense_bloc.dart';
+import 'package:expense_tracker_app/bloc/graph%20bloc/graph_bloc.dart';
+import 'package:expense_tracker_app/graph/bar_graph.dart';
 import 'package:expense_tracker_app/model/expense.dart';
 import 'package:expense_tracker_app/presentation/widgets/my_list_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -19,7 +20,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
-    context.read<ExpenseBloc>().add(ReadAllExpenses());
+    context.read<GraphBloc>().add(GetGraphData());
+    context.read<ExpenseBloc>().add(ReadMonthExpesnes(
+        year: DateTime.now().year, month: DateTime.now().month));
     super.initState();
   }
 
@@ -118,7 +121,7 @@ class _HomePageState extends State<HomePage> {
                 if (nameController.text.isNotEmpty &&
                     amountController.text.isNotEmpty) {
                   context.read<ExpenseBloc>().add(UpdateExpense(
-                      id: expense.id,
+                      expense: expense,
                       updatedExpense: Expense(
                         name: nameController.text,
                         amount: double.parse(amountController.text),
@@ -139,7 +142,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void openDeleteBox(int id) {
+  void openDeleteBox(Expense expense) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -155,7 +158,7 @@ class _HomePageState extends State<HomePage> {
               backgroundColor: Colors.red,
             ),
             onPressed: () {
-              context.read<ExpenseBloc>().add(DeleteExpense(id: id));
+              context.read<ExpenseBloc>().add(DeleteExpense(expense: expense));
               Navigator.of(context).pop();
             },
             child: const Text('Delete'),
@@ -168,39 +171,131 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: openNewExpenseBox,
-        child: const Icon(Icons.add),
-      ),
-      body: BlocBuilder<ExpenseBloc, ExpenseState>(
-        builder: (context, state) {
-          if (state is ExpenseError) {
-            return Center(
-              child: Text(state.error),
-            );
-          }
-          if (state is ExpenseLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
-          }
-          if (state is ExpenseLoaded) {
-            return ListView.builder(
-              itemCount: state.expenses.length,
-              itemBuilder: (context, index) {
-                final expense = state.expenses[index];
-                return MyListTile(
-                  title: expense.name,
-                  trailing: expense.amount.toString(),
-                  onEditPressed: (context) => openEditBox(expense),
-                  onDeletePressed: (context) => openDeleteBox(expense.id),
-                );
-              },
-            );
-          }
-          return const SizedBox();
-        },
-      ),
-    );
+        floatingActionButton: FloatingActionButton(
+          onPressed: openNewExpenseBox,
+          child: const Icon(Icons.add),
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              BlocBuilder<ExpenseBloc, ExpenseState>(
+                builder: (context, state) {
+                  if (state is ExpenseLoaded) {
+                    return Column(
+                      children: [
+                        Text(
+                            DateFormat('MMM yy')
+                                .format(DateTime(state.year, state.month, 1)),
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            )),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.currency_rupee),
+                            Text(
+                              state.totalExpense.toString(),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+              BlocBuilder<GraphBloc, GraphState>(
+                builder: (context, state) {
+                  if (state is GraphError) {
+                    return Center(
+                      child: Text(state.message),
+                    );
+                  }
+                  if (state is GraphLoading) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (state is GraphLoaded) {
+                    int startMonth = state.startMonth;
+                    int startYear = state.startYear;
+                    int currentMonth = DateTime.now().month;
+                    int currentYear = DateTime.now().year;
+
+                    int monthCount = (currentYear - startYear) * 12 +
+                        currentMonth -
+                        startMonth +
+                        1;
+                    final monthlyTotal = state.monthlyTotal;
+                    List<double> monthlySummary = List.generate(monthCount,
+                        (index) => monthlyTotal[startMonth + index] ?? 0.0);
+                    return SizedBox(
+                      height: 250,
+                      child: BarGraph(
+                        monthlySummary: monthlySummary,
+                        startMonth: startMonth,
+                        startYear: startYear,
+                      ),
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+              Expanded(
+                child: BlocBuilder<ExpenseBloc, ExpenseState>(
+                  builder: (context, state) {
+                    if (state is ExpenseError) {
+                      return Center(
+                        child: Text(state.error),
+                      );
+                    }
+                    if (state is ExpenseLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+                    if (state is ExpenseLoaded) {
+                      context.read<GraphBloc>().add(GetGraphData());
+                      return ListView.builder(
+                        itemCount: state.expenses.length,
+                        itemBuilder: (context, index) {
+                          final expense = state.expenses[index];
+                          return MyListTile(
+                            title: expense.name,
+                            trailing: expense.amount.toString(),
+                            onEditPressed: (expense.date.month ==
+                                        DateTime.now().month &&
+                                    expense.date.year == DateTime.now().year)
+                                ? (context) => openEditBox(expense)
+                                : (context) => ScaffoldMessenger.of(context)
+                                        .showSnackBar(const SnackBar(
+                                      content: Text(
+                                          'You can only edit expenses of the current month'),
+                                    )),
+                            onDeletePressed: (expense.date.month ==
+                                        DateTime.now().month &&
+                                    expense.date.year == DateTime.now().year)
+                                ? (context) => openDeleteBox(expense)
+                                : (context) => ScaffoldMessenger.of(context)
+                                        .showSnackBar(const SnackBar(
+                                      content: Text(
+                                          'You can only delete expenses of the current month'),
+                                    )),
+                          );
+                        },
+                      );
+                    }
+                    return const SizedBox();
+                  },
+                ),
+              )
+            ],
+          ),
+        ));
   }
 }

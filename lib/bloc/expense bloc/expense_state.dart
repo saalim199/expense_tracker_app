@@ -9,8 +9,14 @@ final class ExpenseLoading extends ExpenseState {}
 
 final class ExpenseLoaded extends ExpenseState {
   final List<Expense> expenses;
-
-  ExpenseLoaded({required this.expenses});
+  final double totalExpense;
+  final int month;
+  final int year;
+  ExpenseLoaded(
+      {required this.month,
+      required this.year,
+      required this.totalExpense,
+      required this.expenses});
 }
 
 final class ExpenseError extends ExpenseState {
